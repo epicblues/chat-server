@@ -110,7 +110,8 @@ app.post('/channels/:cname/messages', (req, res) => {
 app.get('/channels/:cname/messages', (req, res) => {
     let cname = req.params.cname;
     let messagesRef = admin.database().ref(`channels/${cname}/messages`).orderByChild('date').limitToLast(20);
-    messagesRef.once('value', function (snapshot) {
+    messagesRef.once('value')
+    .then(snapshot => {
         let items = new Array();
         snapshot.forEach(function (childSnapshot) {
             let message = childSnapshot.val();
@@ -120,14 +121,30 @@ app.get('/channels/:cname/messages', (req, res) => {
         items.reverse();
         res.header('Content-Type', 'application/json; charset=utf-8');
         res.send({ messages: items });
-    });
+    })
+    .catch(console.log)
+    // messagesRef.once('value', function (snapshot) {
+    //     let items = new Array();
+    //     snapshot.forEach(function (childSnapshot) {
+    //         let message = childSnapshot.val();
+    //         message.id = childSnapshot.key;
+    //         items.push(message);
+    //     });
+    //     items.reverse();
+    //     res.header('Content-Type', 'application/json; charset=utf-8');
+    //     res.send({ messages: items });
+    // });
 });
 
 app.post('/reset', (req, res) => {
-    createChannel('general');
-    createChannel('random');
-    res.header('Content-Type', 'application/json; charset=utf-8');
-    res.status(201).send({ result: "ok" });
+    admin.database().ref('channels').remove()
+    .then(() => {
+        createChannel('general');
+        createChannel('random');
+        res.header('Content-Type', 'application/json; charset=utf-8');
+        res.status(201).send({ result: "ok" });
+    })
+    
 });
 
 exports.v1 = functions.https.onRequest(app);
